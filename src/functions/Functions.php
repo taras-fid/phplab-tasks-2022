@@ -19,6 +19,8 @@
 
 namespace functions;
 
+use function PHPUnit\Framework\isEmpty;
+
 class Functions
 {
     /**
@@ -57,9 +59,12 @@ class Functions
      */
     public function sayHelloArgumentWrapper($arg): string
     {
-        // put your code here
-
-        return $this->sayHelloArgument($arg);
+        if (is_numeric($arg) || is_bool($arg) || is_string($arg)) {
+            return $this->sayHelloArgument($arg);
+        }
+        else {
+            throw new \InvalidArgumentException();
+        }
     }
 
     /**
@@ -89,8 +94,13 @@ class Functions
      * @return array
      * @throws \InvalidArgumentException
      */
-    public function countArgumentsWrapper(): array
+    public function countArgumentsWrapper(...$args): array
     {
-        // put your code here
+        foreach ($args as $arg) {
+            if (!isEmpty($arg) || !is_string($arg)) {
+                throw new \InvalidArgumentException();
+            }
+        }
+        return $this->countArguments(...$args);
     }
 }

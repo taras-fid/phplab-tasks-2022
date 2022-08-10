@@ -6,9 +6,7 @@ class Strings implements  StringsInterface {
 
     public function snakeCaseToCamelCase(string $input): string
     {
-        $snake = '_';
-        $camel = '';
-        return str_replace($snake, $camel, lcfirst(ucwords($input, '_')));
+        return str_replace('_', '', lcfirst(ucwords($input, '_')));
     }
 
     public function mirrorMultibyteString(string $input): string
