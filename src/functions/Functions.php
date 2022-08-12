@@ -61,8 +61,7 @@ class Functions
     {
         if (is_numeric($arg) || is_bool($arg) || is_string($arg)) {
             return $this->sayHelloArgument($arg);
-        }
-        else {
+        } else {
             throw new \InvalidArgumentException();
         }
     }
@@ -101,6 +100,7 @@ class Functions
                 throw new \InvalidArgumentException();
             }
         }
+
         return $this->countArguments(...$args);
     }
 }
