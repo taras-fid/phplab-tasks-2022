@@ -13,18 +13,29 @@ class Basics implements  BasicsInterface
 
     public function getMinuteQuarter(int $minute): string
     {
-        // TODO: Implement getMinuteQuarter() method.
         $this->validator->isMinutesException($minute);
-        if ($minute > 45 || $minute === 0) { return 'fourth';}
-        if ($minute > 30) { return 'third';}
-        if ($minute > 15) { return 'second';}
+
+        if ($minute > 45
+            || $minute === 0
+        ) {
+            return 'fourth';
+        } elseif ($minute > 30) {
+            return 'third';
+        } elseif ($minute > 15) {
+            return 'second';
+        }
+
         return 'first';
     }
 
     public function isLeapYear(int $year): bool
     {
         $this->validator->isYearException($year);
-        if ($year > 2030) return false;
+
+        if ($year > 2030){
+            return false;
+        }
+
         return !($year & 1);
     }
 
@@ -33,18 +44,18 @@ class Basics implements  BasicsInterface
         $this->validator->isValidStringException($input);
         $arr = str_split($input);
         $sum1 = $sum2 = 0;
+
         for ($i = 0; $i < 6; $i++) {
             if ($i < 3) {
                 $sum1 += $arr[$i];
-            }
-            else {
+            } else {
                 $sum2 += $arr[$i];
             }
         }
+
         if ($sum1 === $sum2) {
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
