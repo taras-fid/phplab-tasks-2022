@@ -3,26 +3,168 @@ require_once './functions.php';
 
 $airports = require './airports.php';
 
+$filterLetter = $_GET['filter_by_first_letter'] ?? null;
+$filterSort = $_GET['sort'] ?? null;
+$filterPage = $_GET['page'] ?? 1;
+$filterState = $_GET['filter_by_state'] ?? null;
+$filtersArr = [$filterLetter, $filterState, $filterSort];
 // Filtering
 /**
  * Here you need to check $_GET request if it has any filtering
  * and apply filtering by First Airport Name Letter and/or Airport State
  * (see Filtering tasks 1 and 2 below)
+
+ * @param string $filterLetter
+ * @param array $airports
+ * @return array
  */
+function firstLetterFilter(string $filterLetter, array $airports): array
+{
+
+    $filteredArr = [];
+
+    foreach ($airports as $airport) {
+        if (mb_substr($airport['name'], 0, 1) === $filterLetter) {
+            $filteredArr[] = $airport;
+        }
+    }
+
+    return $filteredArr;
+
+}
+
+/**
+ * @param string $filterState
+ * @param array $airports
+ * @return array
+ */
+function stateFilter(string $filterState, array $airports): array
+{
+
+    $filteredArr = [];
+
+    foreach ($airports as $airport) {
+        if ($airport['state'] === $filterState) {
+            $filteredArr[] = $airport;
+        }
+    }
+
+    return $filteredArr;
+
+}
+
+if ($filterLetter) {
+    $airports = firstLetterFilter($filterLetter, $airports);
+}
+
+if ($filterState) {
+    $airports = stateFilter($filterState, $airports);
+}
 
 // Sorting
 /**
  * Here you need to check $_GET request if it has sorting key
  * and apply sorting
  * (see Sorting task below)
+
+ * @param string $sortKey
+ * @param array $airports
+ * @return array
  */
+function codeSorting(string $sortKey, array $airports): array
+{
+
+    $unFilteredArr = $airports;
+    $sortKeyArr = array_column($airports, $sortKey);
+    $ind = array_multisort($sortKeyArr, SORT_ASC, $airports);
+
+    if ($ind) {
+        return $airports;
+    } else {
+        return $unFilteredArr;
+    }
+
+}
+
+if ($filterSort) {
+    $airports = codeSorting($filterSort, $airports);
+}
 
 // Pagination
 /**
  * Here you need to check $_GET request if it has pagination key
  * and apply pagination logic
  * (see Pagination task below)
+
+ * @param $filterPage
+ * @param array $airports
+ * @param array $filters
+ * @return void
  */
+function pagination($filterPage, array $airports, array $filters): void {
+
+    $filterLetter = $_GET['filter_by_first_letter'] ?? null;
+    $filterState = $_GET['filter_by_state'] ?? null;
+    $filterSort = $_GET['sort'] ?? null;
+    $pageAmong = count($airports) / 5 + 1;
+    $href = '';
+
+    foreach ($filters as $filter) {
+        if ($filter != null) {
+            if ($filter == $filterLetter) {
+                $href .= 'filter_by_first_letter=' . $filter . '&';
+            } elseif ($filter == $filterState) {
+                $href .= 'filter_by_state=' . $filter . '&';
+            } elseif ($filter == $filterSort) {
+                $href .= 'sort=' . $filter;
+            }
+        }
+    }
+
+    if ($pageAmong < $filterPage + 5 ) {
+        $end = $pageAmong;
+    } else {
+        $end = $filterPage + 5;
+    }
+    if ($filterPage > 5) {
+        for ($i = $filterPage - 5; $i < $end; $i++) {
+            if ($i == $filterPage) {
+                echo "<li class=\"page-item active\"><a class=\"page-link\" href=\"/?page=$i&$href\">$i</a></li>";
+            } else {
+                echo "<li class=\"page-item\"><a class=\"page-link\" href=\"/?page=$i&$href\">$i</a></li>";
+            }
+        }
+    } else {
+        for ($i = 1; $i < $end; $i++) {
+            if ($i == $filterPage) {
+                echo "<li class=\"page-item active\"><a class=\"page-link\" href=\"/?page=$i&$href\">$i</a></li>";
+            } else {
+                echo "<li class=\"page-item\"><a class=\"page-link\" href=\"/?page=$i&$href\">$i</a></li>";
+            }
+        }
+    }
+
+}
+
+/**
+ * @param $filterPage
+ * @param array $airports
+ * @return array
+ */
+function filterPage($filterPage, array $airports): array
+{
+    $filteredArr = [];
+    $startInd = ($filterPage - 1) * 5;
+    $endInd = $filterPage * 5 - 1;
+
+    for ($i = $startInd; $i <= $endInd; $i++) {
+        if (isset($airports[$i]['name'])) {
+            $filteredArr[] = $airports[$i];
+        }
+    }
+    return $filteredArr;
+}
+
 ?>
 <!doctype html>
 <html lang="en">
@@ -53,7 +195,8 @@ $airports = require './airports.php';
         Filter by first letter:
 
         <?php foreach (getUniqueFirstLetters(require './airports.php') as $letter): ?>
-            <a href="#"><?= $letter ?></a>
+            <a href="/?page=1&filter_by_first_letter=<?php echo $letter . '&';
+            if ($filterState) echo 'filter_by_state=' . $filterState;?>"><?= $letter ?></a>
         <?php endforeach; ?>
 
         <a href="/" class="float-right">Reset all filters</a>
@@ -72,10 +215,22 @@ $airports = require './airports.php';
     <table class="table">
         <thead>
         <tr>
-            <th scope="col"><a href="#">Name</a></th>
-            <th scope="col"><a href="#">Code</a></th>
-            <th scope="col"><a href="#">State</a></th>
-            <th scope="col"><a href="#">City</a></th>
+            <th scope="col"><a href="/?<?php
+                if ($filterLetter) echo 'filter_by_first_letter=' . $filterLetter . '&';
+                if ($filterState) echo 'filter_by_state=' . $filterState . '&';
+                ?>sort=name">Name</a></th>
+            <th scope="col"><a href="/?<?php
+                if ($filterLetter) echo 'filter_by_first_letter=' . $filterLetter . '&';
+                if ($filterState) echo 'filter_by_state=' . $filterState . '&';
+                ?>sort=code">Code</a></th>
+            <th scope="col"><a href="/?<?php
+                if ($filterLetter) echo 'filter_by_first_letter=' . $filterLetter . '&';
+                if ($filterState) echo 'filter_by_state=' . $filterState . '&';
+                ?>sort=state">State</a></th>
+            <th scope="col"><a href="/?<?php
+                if ($filterLetter) echo 'filter_by_first_letter=' . $filterLetter . '&';
+                if ($filterState) echo 'filter_by_state=' . $filterState . '&';
+                ?>sort=city">City</a></th>
             <th scope="col">Address</th>
             <th scope="col">Timezone</th>
         </tr>
@@ -91,11 +246,12 @@ $airports = require './airports.php';
              - when you apply filter_by_state, than filter_by_first_letter (see Filtering task #1) is not reset
                i.e. if you have filter_by_first_letter set you can additionally use filter_by_state
         -->
-        <?php foreach ($airports as $airport): ?>
+        <?php foreach (filterPage($filterPage ,$airports) as $airport): ?>
         <tr>
             <td><?= $airport['name'] ?></td>
             <td><?= $airport['code'] ?></td>
-            <td><a href="#"><?= $airport['state'] ?></a></td>
+            <td><a href="/?page=1&<?php if ($filterLetter) echo 'filter_by_first_letter=' . $filterLetter . '&';
+            ?>filter_by_state=<?= $airport['state'] ?>"><?= $airport['state'] ?></a></td>
             <td><?= $airport['city'] ?></td>
             <td><?= $airport['address'] ?></td>
             <td><?= $airport['timezone'] ?></td>
@@ -115,9 +271,7 @@ $airports = require './airports.php';
     -->
     <nav aria-label="Navigation">
         <ul class="pagination justify-content-center">
-            <li class="page-item active"><a class="page-link" href="#">1</a></li>
-            <li class="page-item"><a class="page-link" href="#">2</a></li>
-            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <?php pagination($filterPage, $airports, $filtersArr)?>
         </ul>
     </nav>
 
