@@ -2,10 +2,6 @@
 
 namespace basics;
 
-use http\Exception\InvalidArgumentException;
-use phpDocumentor\Reflection\Types\Integer;
-use function PHPUnit\Framework\isType;
-
 class BasicsValidator implements BasicsValidatorInterface
 {
 
