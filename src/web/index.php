@@ -1,4 +1,7 @@
 <?php
+
+const PAGINATING_INDEX = 5;
+
 require_once './functions.php';
 
 $airports = require './airports.php';
@@ -8,6 +11,7 @@ $filterSort = $_GET['sort'] ?? null;
 $filterPage = $_GET['page'] ?? 1;
 $filterState = $_GET['filter_by_state'] ?? null;
 $filtersArr = [$filterLetter, $filterState, $filterSort];
+
 // Filtering
 /**
  * Here you need to check $_GET request if it has any filtering
@@ -106,7 +110,7 @@ function pagination($filterPage, array $airports, array $filters): void {
     $filterLetter = $_GET['filter_by_first_letter'] ?? null;
     $filterState = $_GET['filter_by_state'] ?? null;
     $filterSort = $_GET['sort'] ?? null;
-    $pageAmong = count($airports) / 5 + 1;
+    $pageAmong = count($airports) / PAGINATING_INDEX + 1;
     $href = '';
 
     foreach ($filters as $filter) {
@@ -121,13 +125,13 @@ function pagination($filterPage, array $airports, array $filters): void {
         }
     }
 
-    if ($pageAmong < $filterPage + 5 ) {
+    if ($pageAmong < $filterPage + PAGINATING_INDEX ) {
         $end = $pageAmong;
     } else {
-        $end = $filterPage + 5;
+        $end = $filterPage + PAGINATING_INDEX;
     }
-    if ($filterPage > 5) {
-        for ($i = $filterPage - 5; $i < $end; $i++) {
+    if ($filterPage > PAGINATING_INDEX) {
+        for ($i = $filterPage - PAGINATING_INDEX; $i < $end; $i++) {
             if ($i == $filterPage) {
                 echo "<li class=\"page-item active\"><a class=\"page-link\" href=\"/?page=$i&$href\">$i</a></li>";
             } else {
@@ -154,8 +158,8 @@ function pagination($filterPage, array $airports, array $filters): void {
 function filterPage($filterPage, array $airports): array
 {
     $filteredArr = [];
-    $startInd = ($filterPage - 1) * 5;
-    $endInd = $filterPage * 5 - 1;
+    $startInd = ($filterPage - 1) * PAGINATING_INDEX;
+    $endInd = $filterPage * PAGINATING_INDEX - 1;
 
     for ($i = $startInd; $i <= $endInd; $i++) {
         if (isset($airports[$i]['name'])) {

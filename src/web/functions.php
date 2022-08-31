@@ -13,7 +13,6 @@ function getUniqueFirstLetters(array $airports): array
 {
 
     $lettersArr = [];
-    $resArr = [];
 
     foreach ($airports as $airport) {
         $lettersArr[] = mb_substr($airport['name'], 0, 1);
