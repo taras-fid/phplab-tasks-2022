@@ -78,14 +78,14 @@ if ($filterState) {
 function codeSorting(string $sortKey, array $airports): array
 {
 
-    $unFilteredArr = $airports;
-    $sortKeyArr = array_column($airports, $sortKey);
-    $ind = array_multisort($sortKeyArr, SORT_ASC, $airports);
+    $inputArray = $airports;
+    $keysArray = array_column($airports, $sortKey);
+    $ind = array_multisort($keysArray, SORT_ASC, $airports);
 
     if ($ind) {
         return $airports;
     } else {
-        return $unFilteredArr;
+        return $inputArray;
     }
 
 }
@@ -103,15 +103,16 @@ if ($filterSort) {
  * @param $filterPage
  * @param array $airports
  * @param array $filters
- * @return void
+ * @return array
  */
-function pagination($filterPage, array $airports, array $filters): void {
+function pagination($filterPage, array $airports, array $filters): array {
 
     $filterLetter = $_GET['filter_by_first_letter'] ?? null;
     $filterState = $_GET['filter_by_state'] ?? null;
     $filterSort = $_GET['sort'] ?? null;
     $pageAmong = count($airports) / PAGINATING_INDEX + 1;
     $href = '';
+    $paginationArr = [];
 
     foreach ($filters as $filter) {
         if ($filter != null) {
@@ -133,20 +134,21 @@ function pagination($filterPage, array $airports, array $filters): void {
     if ($filterPage > PAGINATING_INDEX) {
         for ($i = $filterPage - PAGINATING_INDEX; $i < $end; $i++) {
             if ($i == $filterPage) {
-                echo "<li class=\"page-item active\"><a class=\"page-link\" href=\"/?page=$i&$href\">$i</a></li>";
+                $paginationArr[] = "<li class=\"page-item active\"><a class=\"page-link\" href=\"/?page=$i&$href\">$i</a></li>";
             } else {
-                echo "<li class=\"page-item\"><a class=\"page-link\" href=\"/?page=$i&$href\">$i</a></li>";
+                $paginationArr[] = "<li class=\"page-item\"><a class=\"page-link\" href=\"/?page=$i&$href\">$i</a></li>";
             }
         }
     } else {
         for ($i = 1; $i < $end; $i++) {
             if ($i == $filterPage) {
-                echo "<li class=\"page-item active\"><a class=\"page-link\" href=\"/?page=$i&$href\">$i</a></li>";
+                $paginationArr[] = "<li class=\"page-item active\"><a class=\"page-link\" href=\"/?page=$i&$href\">$i</a></li>";
             } else {
-                echo "<li class=\"page-item\"><a class=\"page-link\" href=\"/?page=$i&$href\">$i</a></li>";
+                $paginationArr[] = "<li class=\"page-item\"><a class=\"page-link\" href=\"/?page=$i&$href\">$i</a></li>";
             }
         }
     }
+    return $paginationArr;
 
 }
 
@@ -275,7 +277,9 @@ function filterPage($filterPage, array $airports): array
     -->
     <nav aria-label="Navigation">
         <ul class="pagination justify-content-center">
-            <?php pagination($filterPage, $airports, $filtersArr)?>
+            <?php foreach (pagination($filterPage, $airports, $filtersArr) as $paginationBlock): ?>
+            <?= $paginationBlock ?>
+            <?php endforeach; ?>
         </ul>
     </nav>
 
