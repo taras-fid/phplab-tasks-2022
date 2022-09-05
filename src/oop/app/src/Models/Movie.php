@@ -5,9 +5,9 @@ namespace src\oop\app\src\Models;
 class Movie implements MovieInterface
 {
 
-    public string $title;
-    public string $poster;
-    public string $description;
+    protected string $title;
+    protected string $poster;
+    protected string $description;
 
     /**
      * @return string
