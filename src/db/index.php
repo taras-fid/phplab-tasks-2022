@@ -3,12 +3,28 @@
  * Connect to DB
  */
 
+/** @var PDO $pdo */
+require_once './pdo_ini.php';
+
+// const variable for pagination logic
+const PAGINATION_INDEX =  5;
+
+// variables for filtering logic
+$filterLetter = $_GET['filter_by_first_letter'] ?? null;
+$filterSort = $_GET['sort'] ?? null;
+$filterPage = $_GET['page'] ?? 1;
+$filterState = $_GET['filter_by_state'] ?? null;
+
 /**
  * SELECT the list of unique first letters using https://www.w3resource.com/mysql/string-functions/mysql-left-function.php
  * and https://www.w3resource.com/sql/select-statement/queries-with-distinct.php
  * and set the result to $uniqueFirstLetters variable
  */
-$uniqueFirstLetters = ['A', 'B', 'C'];
+
+foreach ($pdo->query('SELECT DISTINCT LEFT(name, 1) AS letter FROM airports') as $letter) {
+    $uniqueFirstLetters[] = $letter['letter'];
+}
+sort($uniqueFirstLetters);
 
 // Filtering
 /**
@@ -21,7 +37,15 @@ $uniqueFirstLetters = ['A', 'B', 'C'];
  * where A - requested filter value
  */
 
-// Sorting
+$sql = ' FROM airports JOIN states on airports.state_id = states.id JOIN cities on airports.city_id = cities.id';
+if ($filterLetter && $filterState) {
+    $sql .= " WHERE airports.name LIKE '$filterLetter%' AND states.name = '$filterState'";
+} elseif ($filterLetter) {
+    $sql .= " WHERE airports.name LIKE '$filterLetter%'";
+} elseif ($filterState) {
+    $sql .= " WHERE states.name = '$filterState'";
+}
+
 /**
  * Here you need to check $_GET request if it has sorting key
  * and apply sorting
@@ -30,6 +54,10 @@ $uniqueFirstLetters = ['A', 'B', 'C'];
  * For sorting use ORDER BY A
  * where A - requested filter value
  */
+
+if ($filterSort) { // Sorting with ORDER BY
+    $sql .= " ORDER BY $filterSort";
+}
 
 // Pagination
 /**
@@ -41,13 +69,69 @@ $uniqueFirstLetters = ['A', 'B', 'C'];
  * To get the number of all airports matched by filter use COUNT(*) in the SELECT statement with all filters applied
  */
 
+// 1 more select to get count of all resulted rows of sql query
+$rows_count = $pdo->query('SELECT COUNT(*)'.$sql)->fetchAll()[0]['COUNT(*)'];
+
+if ($filterPage == 1) { // setting limits of rows for output
+    $sql .= ' LIMIT 5';
+} else {
+    $limitStart = ($filterPage - 1) * PAGINATION_INDEX;
+    $sql .= " LIMIT $limitStart, 5";
+}
+
+/**
+ * @param int $filterPage
+ * @param int $rows_count
+ * @return array
+ */
+function pagination( int $filterPage, int $rows_count): array {
+
+    $paginationArr = [];
+    $pageAmong = $rows_count / PAGINATION_INDEX + 1;
+
+    if ($pageAmong < $filterPage + PAGINATION_INDEX ) {
+        $end = $pageAmong;
+    } else {
+        $end = $filterPage + PAGINATION_INDEX;
+    }
+    $href = '';
+    if (isset($_GET['filter_by_first_letter'])) {
+        $href .= 'filter_by_first_letter=' . $_GET['filter_by_first_letter'] . '&';
+    }
+    if (isset($_GET['filter_by_state'])) {
+        $href .= 'filter_by_state=' . $_GET['filter_by_state'] . '&';
+    }
+    if (isset($_GET['sort'])) {
+        $href .= 'sort=' . $_GET['sort'] . '&';
+    }
+    if ($filterPage > PAGINATION_INDEX) {
+        for ($i = $filterPage - PAGINATION_INDEX; $i < $end; $i++) {
+            if ($i == $filterPage) {
+                $paginationArr[] = "<li class=\"page-item active\"><a class=\"page-link\" href=\"./index.php?page=$i&$href\">$i</a></li>";
+            } else {
+                $paginationArr[] = "<li class=\"page-item\"><a class=\"page-link\" href=\"./index.php?page=$i&$href\">$i</a></li>";
+            }
+        }
+    } else {
+        for ($i = 1; $i < $end; $i++) {
+            if ($i == $filterPage) {
+                $paginationArr[] = "<li class=\"page-item active\"><a class=\"page-link\" href=\"./index.php?page=$i&$href\">$i</a></li>";
+            } else {
+                $paginationArr[] = "<li class=\"page-item\"><a class=\"page-link\" href=\"./index.php?page=$i&$href\">$i</a></li>";
+            }
+        }
+    }
+
+    return $paginationArr;
+}
+
 /**
  * Build a SELECT query to DB with all filters / sorting / pagination
  * and set the result to $airports variable
  *
  * For city_name and state_name fields you can use alias https://www.mysqltutorial.org/mysql-alias/
  */
-$airports = [];
+$airports = $pdo->query('SELECT airports.name as name, code, states.name as state_name, cities.name as city_name, address, timezone' . $sql);
 ?>
 <!doctype html>
 <html lang="en">
@@ -78,10 +162,11 @@ $airports = [];
         Filter by first letter:
 
         <?php foreach ($uniqueFirstLetters as $letter): ?>
-            <a href="#"><?= $letter ?></a>
+            <a href="./index.php?page=1&filter_by_first_letter=<?php echo $letter . '&';
+            if ($filterState) echo 'filter_by_state=' . $filterState;?>"><?= $letter ?></a>
         <?php endforeach; ?>
 
-        <a href="/" class="float-right">Reset all filters</a>
+        <a href="./index.php" class="float-right">Reset all filters</a>
     </div>
 
     <!--
@@ -97,10 +182,22 @@ $airports = [];
     <table class="table">
         <thead>
         <tr>
-            <th scope="col"><a href="#">Name</a></th>
-            <th scope="col"><a href="#">Code</a></th>
-            <th scope="col"><a href="#">State</a></th>
-            <th scope="col"><a href="#">City</a></th>
+            <th scope="col"><a href="./index.php?<?php
+                if ($filterLetter) echo 'filter_by_first_letter=' . $filterLetter . '&';
+                if ($filterState) echo 'filter_by_state=' . $filterState . '&';
+                ?>sort=airports.name">Name</a></th>
+            <th scope="col"><a href="./index.php?<?php
+                if ($filterLetter) echo 'filter_by_first_letter=' . $filterLetter . '&';
+                if ($filterState) echo 'filter_by_state=' . $filterState . '&';
+                ?>sort=code">Code</a></th>
+            <th scope="col"><a href="./index.php?<?php
+                if ($filterLetter) echo 'filter_by_first_letter=' . $filterLetter . '&';
+                if ($filterState) echo 'filter_by_state=' . $filterState . '&';
+                ?>sort=states.name">State</a></th>
+            <th scope="col"><a href="./index.php?<?php
+                if ($filterLetter) echo 'filter_by_first_letter=' . $filterLetter . '&';
+                if ($filterState) echo 'filter_by_state=' . $filterState . '&';
+                ?>sort=cities.name">City</a></th>
             <th scope="col">Address</th>
             <th scope="col">Timezone</th>
         </tr>
@@ -120,7 +217,8 @@ $airports = [];
         <tr>
             <td><?= $airport['name'] ?></td>
             <td><?= $airport['code'] ?></td>
-            <td><a href="#"><?= $airport['state_name'] ?></a></td>
+            <td><a href="./index.php?page=1&<?php if ($filterLetter) echo 'filter_by_first_letter=' . $filterLetter . '&';
+                ?>filter_by_state=<?= $airport['state_name'] ?>"><?= $airport['state_name'] ?></a></td>
             <td><?= $airport['city_name'] ?></td>
             <td><?= $airport['address'] ?></td>
             <td><?= $airport['timezone'] ?></td>
@@ -140,9 +238,9 @@ $airports = [];
     -->
     <nav aria-label="Navigation">
         <ul class="pagination justify-content-center">
-            <li class="page-item active"><a class="page-link" href="#">1</a></li>
-            <li class="page-item"><a class="page-link" href="#">2</a></li>
-            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <?php foreach (pagination($filterPage, $rows_count) as $paginationBlock): ?>
+            <?= $paginationBlock ?>
+            <?php endforeach; ?>
         </ul>
     </nav>
 
